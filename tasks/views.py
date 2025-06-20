@@ -5,11 +5,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from .models import Task
 from django.contrib import messages
+from django.utils import timezone
 
 # Create your views here.
-@login_required
-def index(request):
-    return render(request, 'index.html')
 
 def user_login(request):
     if request.method == 'POST':
@@ -54,3 +52,37 @@ def register(request):
         return redirect('/')
     
     return render(request, 'register.html')
+
+@login_required
+def index(request):
+    tasks = Task.objects.all().order_by('-created_at')
+    if tasks :
+        for task in tasks:
+            if task.completed :
+                task.formatted_completed = task.completed.strftime('%d %b, %Y %H:%M')
+            task.formatted_created = task.created_at.strftime('%d %b, %Y %H:%M')
+    return render(request, 'index.html', {'tasks' : tasks})
+
+@login_required
+def add_task(request):
+    if request.method == 'POST':
+        title = request.POST['title']
+        description = request.POST['description']
+
+        task = Task.objects.create(title = title, details=description, user=request.user)
+        return redirect('task-list')
+    return render(request, 'task-form.html')
+
+@login_required
+def complete_task(request, task_id:int):
+    task = Task.objects.filter(id=task_id).first()
+    task.completed = timezone.now()
+    task.save()
+    messages.success(request, 'Task Completed Successfully!')
+    return redirect('/')
+
+@login_required
+def delete_task(request, task_id:int):
+    task = Task.objects.filter(id=task_id).first().delete()
+    messages.success(request, 'Task Deleted Successfully!')
+    return redirect('/')
