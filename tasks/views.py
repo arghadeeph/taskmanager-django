@@ -37,15 +37,15 @@ def register(request):
         
         if not all([first_name, last_name, email, password, confirm_password]):
             messages.error(request, 'All fields are required.')
-            return redirect('register')
+            return render(request, 'register.html', {'first_name': first_name, 'last_name': last_name, 'email': email})
 
         if password != confirm_password:
             messages.error(request, 'Password & Confirm Password must match!')
-            return redirect('register')
+            return render(request, 'register.html', {'first_name': first_name, 'last_name': last_name, 'email': email})
         
         if User.objects.filter(username=email).exists():
             messages.error(request, "An account with this email already exists.")
-            return redirect('register')
+            return render(request, 'register.html', {'first_name': first_name, 'last_name': last_name})
 
         user = User.objects.create_user(first_name=first_name, last_name=last_name, email=email, username=email, password=password)
         login(request, user)
@@ -55,7 +55,7 @@ def register(request):
 
 @login_required
 def index(request):
-    tasks = Task.objects.all().order_by('-created_at')
+    tasks = Task.objects.filter(user = request.user).order_by('-created_at')
     if tasks :
         for task in tasks:
             if task.completed :
