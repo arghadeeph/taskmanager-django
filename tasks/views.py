@@ -6,6 +6,8 @@ from django.contrib.auth.models import User
 from .models import Task
 from django.contrib import messages
 from django.utils import timezone
+from django.core.mail import send_mail
+
 
 # Create your views here.
 
@@ -20,7 +22,7 @@ def user_login(request):
             login(request, user)
             return redirect('/')
 
-    return render(request, 'login.html')
+    return render(request, 'registration/login.html')
 
 def user_logout(request):
     logout(request)
@@ -37,21 +39,28 @@ def register(request):
         
         if not all([first_name, last_name, email, password, confirm_password]):
             messages.error(request, 'All fields are required.')
-            return render(request, 'register.html', {'first_name': first_name, 'last_name': last_name, 'email': email})
+            return render(request, 'registration/register.html', {'first_name': first_name, 'last_name': last_name, 'email': email})
 
         if password != confirm_password:
             messages.error(request, 'Password & Confirm Password must match!')
-            return render(request, 'register.html', {'first_name': first_name, 'last_name': last_name, 'email': email})
+            return render(request, 'registration/register.html', {'first_name': first_name, 'last_name': last_name, 'email': email})
         
         if User.objects.filter(username=email).exists():
             messages.error(request, "An account with this email already exists.")
-            return render(request, 'register.html', {'first_name': first_name, 'last_name': last_name})
+            return render(request, 'registration/register.html', {'first_name': first_name, 'last_name': last_name})
 
         user = User.objects.create_user(first_name=first_name, last_name=last_name, email=email, username=email, password=password)
+        send_mail(
+            subject='Welcome to TaskManager',
+            message='Hello! ' + first_name + ' ' + last_name + ', /n You have successfully registired with TaskManager.',
+            from_email='info@taskmanager.com',
+            recipient_list=[email],
+            fail_silently=False,
+        )
         login(request, user)
         return redirect('/')
     
-    return render(request, 'register.html')
+    return render(request, 'registration/register.html')
 
 @login_required
 def index(request):
